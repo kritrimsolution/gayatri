@@ -37,12 +37,13 @@ import { useCartStore } from './store/cart';
 
 const API_BASE = 'http://localhost:5000/api';
 const STATIC_BASE = 'http://localhost:5000';
+const SHOW_PHASE_2 = false; // Set to true to unhide Phase 2 B2B Shop Portal & Order/Ledger Queue
 
 export default function AdminConsole() {
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authRole, setAuthRole] = useState('admin'); // 'admin' or 'client'
-  const [loginRoleTab, setLoginRoleTab] = useState('client'); // default to B2B login view
+  const [loginRoleTab, setLoginRoleTab] = useState(SHOW_PHASE_2 ? 'client' : 'admin'); // default to B2B login view if enabled
   const [token, setToken] = useState('');
   const [adminUser, setAdminUser] = useState(null);
   const [clientUser, setClientUser] = useState(null);
@@ -614,28 +615,30 @@ export default function AdminConsole() {
           </div>
 
           {/* Role selector tabs */}
-          <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-850">
-            <button
-              onClick={() => { setLoginRoleTab('client'); setLoginEmail(''); }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                loginRoleTab === 'client' 
-                  ? 'bg-gradient-to-r from-teal-600 to-teal-500 text-slate-950 font-bold shadow-md' 
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Medical Shop Partner
-            </button>
-            <button
-              onClick={() => { setLoginRoleTab('admin'); setLoginEmail('admin@gayatri.com'); }}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                loginRoleTab === 'admin' 
-                  ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-slate-100 font-bold shadow-md' 
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Distributor Admin
-            </button>
-          </div>
+          {SHOW_PHASE_2 && (
+            <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-850">
+              <button
+                onClick={() => { setLoginRoleTab('client'); setLoginEmail(''); }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  loginRoleTab === 'client' 
+                    ? 'bg-gradient-to-r from-teal-600 to-teal-500 text-slate-950 font-bold shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Medical Shop Partner
+              </button>
+              <button
+                onClick={() => { setLoginRoleTab('admin'); setLoginEmail('admin@gayatri.com'); }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  loginRoleTab === 'admin' 
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-slate-100 font-bold shadow-md' 
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Distributor Admin
+              </button>
+            </div>
+          )}
 
           {loginError && (
             <div className="mb-5 p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-200 text-xs font-medium flex items-center gap-2">
@@ -797,34 +800,38 @@ export default function AdminConsole() {
                 Product Catalog
               </button>
 
-              <button
-                onClick={() => setActiveTab('orders')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                  activeTab === 'orders' 
-                    ? 'bg-indigo-950/40 border-l-4 border-indigo-500 text-indigo-400 font-semibold' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-805/50'
-                }`}
-              >
-                <Receipt className="w-5 h-5" />
-                Orders Queue
-                {orders.filter(o => o.status === 'PENDING').length > 0 && (
-                  <span className="ml-auto bg-indigo-500 text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    {orders.filter(o => o.status === 'PENDING').length}
-                  </span>
-                )}
-              </button>
+              {SHOW_PHASE_2 && (
+                <>
+                  <button
+                    onClick={() => setActiveTab('orders')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                      activeTab === 'orders' 
+                        ? 'bg-indigo-950/40 border-l-4 border-indigo-500 text-indigo-400 font-semibold' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-805/50'
+                    }`}
+                  >
+                    <Receipt className="w-5 h-5" />
+                    Orders Queue
+                    {orders.filter(o => o.status === 'PENDING').length > 0 && (
+                      <span className="ml-auto bg-indigo-500 text-slate-100 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {orders.filter(o => o.status === 'PENDING').length}
+                      </span>
+                    )}
+                  </button>
 
-              <button
-                onClick={() => setActiveTab('ledger')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
-                  activeTab === 'ledger' 
-                    ? 'bg-indigo-950/40 border-l-4 border-indigo-500 text-indigo-400 font-semibold' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-805/50'
-                }`}
-              >
-                <CreditCard className="w-5 h-5" />
-                Ledger Sheets
-              </button>
+                  <button
+                    onClick={() => setActiveTab('ledger')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                      activeTab === 'ledger' 
+                        ? 'bg-indigo-950/40 border-l-4 border-indigo-500 text-indigo-400 font-semibold' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-805/50'
+                    }`}
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Ledger Sheets
+                  </button>
+                </>
+              )}
 
               <button
                 onClick={() => setActiveTab('broadcast')}
@@ -1011,7 +1018,7 @@ export default function AdminConsole() {
           {authRole === 'admin' && activeTab === 'dashboard' && (
             <div className="space-y-8 animate-fade-in">
               {/* Stat Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${SHOW_PHASE_2 ? 'lg:grid-cols-4' : 'lg:grid-cols-2'}`}>
                 <div className="bg-slate-900/40 border border-slate-805 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-bl-full pointer-events-none" />
                   <div className="flex items-center justify-between mb-4">
@@ -1036,40 +1043,44 @@ export default function AdminConsole() {
                   <p className="text-[10px] text-slate-400 mt-2 font-medium">Active drug listings</p>
                 </div>
 
-                <div className="bg-slate-900/40 border border-slate-805 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-full pointer-events-none" />
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Orders</span>
-                    <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400">
-                      <Receipt className="w-5 h-5" />
+                {SHOW_PHASE_2 && (
+                  <>
+                    <div className="bg-slate-900/40 border border-slate-805 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-full pointer-events-none" />
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Orders</span>
+                        <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-400">
+                          <Receipt className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="text-3xl font-extrabold text-amber-400">
+                        {orders.filter(o => o.status === 'PENDING').length}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">Awaiting B2B processing</p>
                     </div>
-                  </div>
-                  <div className="text-3xl font-extrabold text-amber-400">
-                    {orders.filter(o => o.status === 'PENDING').length}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2 font-medium">Awaiting B2B processing</p>
-                </div>
 
-                <div className="bg-slate-900/40 border border-slate-805 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-bl-full pointer-events-none" />
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Credit Outstanding</span>
-                    <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400">
-                      <CreditCard className="w-5 h-5" />
+                    <div className="bg-slate-900/40 border border-slate-805 rounded-2xl p-6 relative overflow-hidden group hover:border-slate-700 transition-all duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 rounded-bl-full pointer-events-none" />
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Credit Outstanding</span>
+                        <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-400">
+                          <CreditCard className="w-5 h-5" />
+                        </div>
+                      </div>
+                      <div className="text-xl font-black text-rose-400">
+                        ₹{analytics.ledgerBalances?.reduce((sum, item) => sum + item.total_outstanding_balance, 0).toFixed(2) || '0.00'}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-2 font-medium">Aggregated distributor credit</p>
                     </div>
-                  </div>
-                  <div className="text-xl font-black text-rose-400">
-                    ₹{analytics.ledgerBalances?.reduce((sum, item) => sum + item.total_outstanding_balance, 0).toFixed(2) || '0.00'}
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2 font-medium">Aggregated distributor credit</p>
-                </div>
+                  </>
+                )}
               </div>
 
               {/* Main Dashboard Panel */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 {/* Automation Rules Information */}
-                <div className="lg:col-span-2 bg-slate-900/30 border border-slate-800/80 rounded-2xl p-8 space-y-6">
+                <div className={`${SHOW_PHASE_2 ? 'lg:col-span-2' : 'lg:col-span-3'} bg-slate-900/30 border border-slate-800/80 rounded-2xl p-8 space-y-6`}>
                   <div>
                     <h3 className="text-lg font-bold text-slate-200 flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5 text-indigo-400" />
@@ -1108,31 +1119,33 @@ export default function AdminConsole() {
                 </div>
 
                 {/* API Logs / Quick Status */}
-                <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-                      B2B Portal Quick Actions
-                    </h3>
-                    
-                    <div className="p-4 bg-slate-950/60 border border-slate-850 rounded-xl space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Live Orders Pending</span>
-                        <span className="font-bold text-amber-400">{orders.filter(o => o.status === 'PENDING').length}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Total B2B Schemes</span>
-                        <span className="font-bold text-teal-400">2 active</span>
+                {SHOW_PHASE_2 && (
+                  <div className="bg-slate-900/30 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between">
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
+                        B2B Portal Quick Actions
+                      </h3>
+                      
+                      <div className="p-4 bg-slate-950/60 border border-slate-850 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Live Orders Pending</span>
+                          <span className="font-bold text-amber-400">{orders.filter(o => o.status === 'PENDING').length}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-400">Total B2B Schemes</span>
+                          <span className="font-bold text-teal-400">2 active</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <button 
-                    onClick={() => setActiveTab('orders')}
-                    className="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-slate-100 font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    Manage B2B Orders Queue <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                    <button 
+                      onClick={() => setActiveTab('orders')}
+                      className="w-full mt-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-slate-100 font-semibold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      Manage B2B Orders Queue <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1296,12 +1309,14 @@ export default function AdminConsole() {
                           )}
                           
                           {/* Discount tag overlay */}
-                          <div className="absolute top-4 left-4 px-2.5 py-1 rounded-lg bg-indigo-500 text-slate-100 text-[10px] font-extrabold flex items-center gap-0.5 shadow-lg">
-                            <Percent className="w-3 h-3 stroke-[3]" /> {discountPercent}% OFF
-                          </div>
+                          {SHOW_PHASE_2 && (
+                            <div className="absolute top-4 left-4 px-2.5 py-1 rounded-lg bg-indigo-500 text-slate-100 text-[10px] font-extrabold flex items-center gap-0.5 shadow-lg">
+                              <Percent className="w-3 h-3 stroke-[3]" /> {discountPercent}% OFF
+                            </div>
+                          )}
 
                           {/* Scheme Banner */}
-                          {prod.scheme_id && (
+                          {SHOW_PHASE_2 && prod.scheme_id && (
                             <div className="absolute bottom-4 left-4 right-4 bg-slate-900/90 backdrop-blur-md px-3 py-2 rounded-xl border border-teal-500/25 flex items-center justify-between shadow-xl">
                               <span className="text-[10px] font-black uppercase text-teal-400 tracking-wider">Active B2B Scheme</span>
                               <span className="text-[10px] font-bold text-slate-200">
@@ -2378,18 +2393,20 @@ export default function AdminConsole() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Link B2B Scheme (Optional)</label>
-                <select
-                  value={productForm.scheme_id}
-                  onChange={(e) => setProductForm({ ...productForm, scheme_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-xs"
-                >
-                  <option value="">No Active Scheme</option>
-                  <option value="buy-10-get-1">Buy 10 Get 1 Free (BUY_X_GET_Y)</option>
-                  <option value="festive-15">15% Extra Discount (PERCENTAGE)</option>
-                </select>
-              </div>
+              {SHOW_PHASE_2 && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Link B2B Scheme (Optional)</label>
+                  <select
+                    value={productForm.scheme_id}
+                    onChange={(e) => setProductForm({ ...productForm, scheme_id: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-indigo-500 text-xs"
+                  >
+                    <option value="">No Active Scheme</option>
+                    <option value="buy-10-get-1">Buy 10 Get 1 Free (BUY_X_GET_Y)</option>
+                    <option value="festive-15">15% Extra Discount (PERCENTAGE)</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1.5">
