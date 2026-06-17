@@ -596,43 +596,58 @@ export default function AdminConsole() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden px-4">
-        {/* Glow blobs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f8f9fc] relative overflow-hidden px-4 font-sans text-[#3c4257] select-none">
+        
+        {/* Subtle background grid lines */}
+        <div className="absolute inset-0 grid grid-cols-5 pointer-events-none z-0">
+          <div className="border-r border-slate-200/40 h-full w-full" />
+          <div className="border-r border-slate-200/40 h-full w-full" />
+          <div className="border-r border-slate-200/40 h-full w-full" />
+          <div className="border-r border-slate-200/40 h-full w-full" />
+          <div className="h-full w-full" />
+        </div>
 
-        <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl shadow-2xl p-8 relative z-10">
-          <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-tr from-teal-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20 mb-4 animate-pulse">
-              <Plus className="w-9 h-9 text-slate-900 stroke-[3]" />
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-teal-400 to-indigo-300 bg-clip-text text-transparent">
-              GAYATRI PHARMA
-            </h1>
-            <p className="text-xs text-slate-400 mt-1 font-medium tracking-wide">
-              B2B Partner & Ordering Portal
-            </p>
-          </div>
+        {/* Left colorful diagonal accents (pulled back to left margin) */}
+        <div className="absolute top-[58%] -left-12 w-[30vw] min-w-[280px] h-28 bg-[#00d4ff] transform -rotate-[12deg] rounded-none opacity-80 z-0 shadow-sm" />
+        <div className="absolute top-[60%] -left-8 w-[28vw] min-w-[260px] h-28 bg-[#635bff] transform -rotate-[12deg] rounded-none opacity-95 z-0 shadow-md" />
+
+        {/* Right colorful diagonal accents (pulled back to right margin - matching left side layout) */}
+        <div className="absolute top-[26%] -right-12 w-[30vw] min-w-[280px] h-28 bg-[#00d4ff] transform -rotate-[12deg] rounded-none opacity-80 z-0 shadow-sm" />
+        <div className="absolute top-[28%] -right-16 w-[28vw] min-w-[260px] h-28 bg-[#635bff] transform -rotate-[12deg] rounded-none opacity-95 z-0 shadow-md" />
+
+        {/* Gayatri Wordmark Logo */}
+        <div className="w-full max-w-[440px] mb-6 mt-16 relative z-10 flex items-center justify-start pl-1">
+          <span className="text-[34px] font-black text-[#0a2540] tracking-tighter">gayatri</span>
+          <span className="text-[34px] font-light text-[#635bff] tracking-tighter">pharma</span>
+        </div>
+
+        {/* Login Card */}
+        <div className="w-full max-w-[440px] bg-white border border-[#e3e8ee] rounded-[4px] shadow-[0_50px_100px_rgba(50,50,93,0.05),0_15px_35px_rgba(50,50,93,0.1),0_5px_15px_rgba(0,0,0,0.05)] p-12 relative z-10">
+          <h2 className="text-[24px] font-bold text-[#0a2540] tracking-tight mb-8">
+            Sign in to your account
+          </h2>
 
           {/* Role selector tabs */}
           {SHOW_PHASE_2 && (
-            <div className="flex bg-slate-950 p-1 rounded-xl mb-6 border border-slate-850">
+            <div className="flex bg-[#f8f9fc] p-1 rounded-md mb-8 border border-[#e3e8ee]">
               <button
-                onClick={() => { setLoginRoleTab('client'); setLoginEmail(''); }}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                type="button"
+                onClick={() => { setLoginRoleTab('client'); setLoginEmail(''); setLoginError(''); }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-[4px] transition-all cursor-pointer ${
                   loginRoleTab === 'client' 
-                    ? 'bg-gradient-to-r from-teal-600 to-teal-500 text-slate-950 font-bold shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-[#635bff] shadow-sm font-bold border border-slate-100' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 Medical Shop Partner
               </button>
               <button
-                onClick={() => { setLoginRoleTab('admin'); setLoginEmail('admin@gayatri.com'); }}
-                className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                type="button"
+                onClick={() => { setLoginRoleTab('admin'); setLoginEmail('admin@gayatri.com'); setLoginError(''); }}
+                className={`flex-1 py-2 text-xs font-semibold rounded-[4px] transition-all cursor-pointer ${
                   loginRoleTab === 'admin' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-slate-100 font-bold shadow-md' 
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-[#635bff] shadow-sm font-bold border border-slate-100' 
+                    : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 Distributor Admin
@@ -640,82 +655,113 @@ export default function AdminConsole() {
             </div>
           )}
 
-          {loginError && (
-            <div className="mb-5 p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-200 text-xs font-medium flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-              <span>{loginError}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                {loginRoleTab === 'admin' ? 'Admin Email' : 'Email or WhatsApp Number'}
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-[14px] text-[#4f566b] font-normal">
+                {loginRoleTab === 'admin' ? 'Email' : 'Email or WhatsApp Number'}
               </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Mail className="w-4 h-4 text-slate-500" />
-                </span>
-                <input
-                  type="text"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm font-mono"
-                  placeholder={loginRoleTab === 'admin' ? 'admin@gayatri.com' : 'e.g. shop1@gayatri.com or 919876543210'}
-                />
-              </div>
+              <input
+                type="text"
+                required
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full h-11 px-3 bg-white border border-[#e3e8ee] rounded-[4px] text-[#3c4257] placeholder-[#a5aab5] focus:outline-none focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 transition-all text-[15px]"
+                placeholder={loginRoleTab === 'admin' ? 'admin@gayatri.com' : 'e.g. shop1@gayatri.com or 919876543210'}
+              />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Lock className="w-4 h-4 text-slate-500" />
-                </span>
-                <input
-                  type="password"
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-950/70 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all text-sm font-mono"
-                  placeholder="••••••••"
-                />
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="block text-[14px] text-[#4f566b] font-normal">
+                  Password
+                </label>
+                <a 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLoginError('Please contact administration at support@gayatri.com to reset password.');
+                  }} 
+                  className="text-[14px] font-medium text-[#635bff] hover:text-[#0a2540] transition-colors"
+                >
+                  Forgot your password?
+                </a>
               </div>
+              <input
+                type="password"
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full h-11 px-3 bg-white border border-[#e3e8ee] rounded-[4px] text-[#3c4257] placeholder-[#a5aab5] focus:outline-none focus:border-[#635bff] focus:ring-2 focus:ring-[#635bff]/10 transition-all text-[15px]"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {loginError && (
+              <div className="text-[14px] text-[#df1b41] font-normal flex items-start gap-1.5 animate-fade-in">
+                <AlertTriangle className="w-4 h-4 text-[#df1b41] flex-shrink-0 mt-0.5 stroke-[2.5]" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
+              <input
+                type="checkbox"
+                id="remember"
+                defaultChecked
+                className="w-4 h-4 text-[#635bff] border-slate-300 rounded-[3px] focus:ring-[#635bff] accent-[#635bff]"
+              />
+              <label htmlFor="remember" className="text-[14px] text-[#4f566b] font-normal select-none cursor-pointer">
+                Stay signed in for a week
+              </label>
             </div>
 
             <button
               type="submit"
               disabled={loginLoading}
-              className={`w-full py-3 text-slate-950 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer ${
-                loginRoleTab === 'admin' 
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 text-slate-100 shadow-indigo-500/10' 
-                  : 'bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-300 hover:to-teal-400 shadow-teal-500/10'
-              }`}
+              className="w-full h-11 bg-[#635bff] hover:bg-[#0a2540] text-white font-semibold rounded-[4px] shadow-sm transition-all text-[15px] flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
             >
               {loginLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Authenticating...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Signing in...
                 </>
               ) : (
-                'Access B2B System'
+                'Continue'
               )}
             </button>
           </form>
+        </div>
 
-          <div className="mt-8 pt-6 border-t border-slate-800/80 text-center">
-            <span className="text-xs text-slate-500 block">
-              Seeded Credential Hint: password is <code className="bg-slate-950 px-1 py-0.5 rounded text-teal-400">password123</code>
-            </span>
-            <div className="mt-3 flex items-center justify-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'}`} />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                Backend Server: {apiOnline ? 'ONLINE' : 'OFFLINE'}
-              </span>
-            </div>
+        {/* Footer & Registration Hints */}
+        <div className="w-full max-w-[440px] text-center mt-6 z-10 space-y-1">
+          <p className="text-[14px] text-[#4f566b]">
+            Don't have an account?{' '}
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                setLoginError('Registration is closed. Please contact sales team to register your medical shop.');
+              }}
+              className="text-[#635bff] hover:text-[#0a2540] font-medium transition-colors"
+            >
+              Contact Sales
+            </a>
+          </p>
+        </div>
+
+        {/* Seed hint and Server status */}
+        <div className="w-full max-w-[440px] text-center mt-auto pb-6 z-10 flex flex-col items-center gap-4">
+          <div className="flex items-center gap-2 text-xs text-[#5469d4] bg-[#5469d4]/5 px-3 py-1.5 rounded-full border border-[#5469d4]/10 font-mono">
+            <span className={`w-2.5 h-2.5 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500 animate-pulse'}`} />
+            <span>Distributor Status: {apiOnline ? 'Online' : 'Offline'}</span>
+          </div>
+          
+          <div className="text-[11px] text-[#5469d4]/60 space-x-3">
+            <span>© Gayatri Pharma</span>
+            <span>•</span>
+            <a href="#" className="hover:text-[#0a2540] transition-colors">Contact Support</a>
+            <span>•</span>
+            <a href="#" className="hover:text-[#0a2540] transition-colors">Privacy & Terms</a>
           </div>
         </div>
       </div>
