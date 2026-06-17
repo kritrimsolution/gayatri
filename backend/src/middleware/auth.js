@@ -16,7 +16,8 @@ function authMiddleware(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.admin = decoded;
+    req.user = decoded;
+    req.admin = decoded; // Backwards compatibility for existing Phase 1 endpoints
     next();
   } catch (error) {
     console.error('JWT verification error:', error.message);
@@ -24,4 +25,22 @@ function authMiddleware(req, res, next) {
   }
 }
 
-module.exports = authMiddleware;
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Access forbidden. Administrator privileges required.' });
+  }
+  next();
+}
+
+function requireClient(req, res, next) {
+  if (!req.user || req.user.role !== 'client') {
+    return res.status(403).json({ error: 'Access forbidden. Client portal privileges required.' });
+  }
+  next();
+}
+
+module.exports = {
+  authMiddleware,
+  requireAdmin,
+  requireClient
+};

@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { sendTemplateWithImage, sendImageMessage } = require('../utils/whatsapp');
 
 const prisma = new PrismaClient();
 
-// Protect broadcast routes
+// Protect broadcast routes - require admin role
 router.use(authMiddleware);
+router.use(requireAdmin);
 
 // POST /api/broadcast
 router.post('/', async (req, res) => {

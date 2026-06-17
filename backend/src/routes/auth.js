@@ -58,7 +58,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, name: admin.name },
+      { id: admin.id, email: admin.email, name: admin.name, role: 'admin' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -68,12 +68,68 @@ router.post('/login', async (req, res) => {
       admin: {
         id: admin.id,
         email: admin.email,
-        name: admin.name
+        name: admin.name,
+        role: 'admin'
       }
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error during login.' });
+  }
+});
+
+// Client (Medical Shop) Login
+router.post('/client-login', async (req, res) => {
+  try {
+    const { username, password } = req.body; // username can be email or whatsapp_number
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username (Email/WhatsApp) and password are required.' });
+    }
+
+    // Try finding customer by email or by whatsapp_number
+    let customer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email: username },
+          { whatsapp_number: username }
+        ]
+      }
+    });
+
+    if (!customer) {
+      return res.status(401).json({ error: 'Invalid credentials. Medical shop not registered.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, customer.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials. Password incorrect.' });
+    }
+
+    const token = jwt.sign(
+      { 
+        id: customer.id, 
+        whatsapp_number: customer.whatsapp_number, 
+        shop_name: customer.shop_name, 
+        email: customer.email,
+        role: 'client' 
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      customer: {
+        id: customer.id,
+        shop_name: customer.shop_name,
+        whatsapp_number: customer.whatsapp_number,
+        email: customer.email,
+        role: 'client'
+      }
+    });
+  } catch (error) {
+    console.error('Client login error:', error);
+    res.status(500).json({ error: 'Internal server error during client login.' });
   }
 });
 
@@ -107,7 +163,8 @@ router.post('/register', async (req, res) => {
       admin: {
         id: newAdmin.id,
         email: newAdmin.email,
-        name: newAdmin.name
+        name: newAdmin.name,
+        role: 'admin'
       }
     });
   } catch (error) {

@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { PrismaClient } = require('@prisma/client');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { processProductImage } = require('../utils/image');
 
 const prisma = new PrismaClient();
@@ -39,8 +39,16 @@ const upload = multer({
   }
 });
 
-// Protect all product routes
+// Protect all product routes with JWT authentication
 router.use(authMiddleware);
+
+// Only admins can modify products (POST, PUT, DELETE)
+router.use((req, res, next) => {
+  if (req.method !== 'GET') {
+    return requireAdmin(req, res, next);
+  }
+  next();
+});
 
 // GET all products
 router.get('/', async (req, res) => {

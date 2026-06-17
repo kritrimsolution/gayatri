@@ -122,6 +122,28 @@ async function sendTemplateWithImage(to, templateName, imageUrl, bodyParams = []
 }
 
 /**
+ * Send a document message (like PDF invoice)
+ * @param {string} to - Recipient phone number
+ * @param {string} documentUrl - Publicly accessible URL of the document
+ * @param {string} filename - Filename of the document
+ * @param {string} [caption] - Document caption
+ */
+async function sendDocumentMessage(to, documentUrl, filename, caption) {
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: formatPhoneNumber(to),
+    type: 'document',
+    document: {
+      link: documentUrl,
+      filename: filename || 'Invoice.pdf',
+      caption: caption || ''
+    }
+  };
+  return sendMetaRequest(payload);
+}
+
+/**
  * Format phone number to WhatsApp standards (strip characters, ensure country code)
  * @param {string} phone - Input phone number
  */
@@ -139,5 +161,6 @@ module.exports = {
   sendTextMessage,
   sendImageMessage,
   sendTemplateWithImage,
+  sendDocumentMessage,
   formatPhoneNumber
 };

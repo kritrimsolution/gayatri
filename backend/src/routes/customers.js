@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware, requireAdmin } = require('../middleware/auth');
 
 const prisma = new PrismaClient();
 
-// Protect all customer routes with JWT authentication
+// Protect all customer routes with JWT authentication and require admin role
 router.use(authMiddleware);
+router.use(requireAdmin);
 
 // GET all customers
 router.get('/', async (req, res) => {

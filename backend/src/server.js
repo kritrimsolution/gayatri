@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const customerRoutes = require('./routes/customers');
 const productRoutes = require('./routes/products');
 const broadcastRoutes = require('./routes/broadcast');
+const orderRoutes = require('./routes/orders');
+const analyticsRoutes = require('./routes/analytics');
 
 // Initialize Cron Job Scheduler
 require('./cron');
@@ -29,6 +31,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/broadcast', broadcastRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Root endpoint status check
 app.get('/', (req, res) => {

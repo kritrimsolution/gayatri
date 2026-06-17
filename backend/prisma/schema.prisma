@@ -18,18 +18,76 @@ model Customer {
   id                  String   @id @default(uuid())
   shop_name           String
   whatsapp_number     String   @unique
+  email               String?  @unique
+  password_hash       String   @default("$2a$10$vI8aWBnW3f5.fO9dfb05p.QyKxW6P46qZk2B23N5zWc0987654321") // bcrypt hash for 'password123'
   gst_number          String
   drug_license_expiry DateTime
   owner_birthday      DateTime
+  orders              Order[]
+  ledger              Ledger?
 }
 
 model Product {
-  id                 String @id @default(uuid())
+  id                 String      @id @default(uuid())
   medicine_name      String
   generic_name       String
   mrp                Float
   b2b_discount_price Float
-  stock_status       String // "IN_STOCK" or "OUT_OF_STOCK"
-  in_stock_qty       Int    @default(0)
+  stock_status       String      // "IN_STOCK" or "OUT_OF_STOCK"
+  current_stock      Int         @default(0)
   image_url          String
+  scheme_id          String?
+  scheme             Scheme?     @relation(fields: [scheme_id], references: [id], onDelete: SetNull)
+  orderItems         OrderItem[]
+}
+
+enum SchemeType {
+  BUY_X_GET_Y
+  PERCENTAGE
+}
+
+model Scheme {
+  id           String     @id @default(uuid())
+  name         String
+  type         SchemeType
+  buy_qty      Int?
+  get_qty      Int?
+  discount_pct Float?
+  products     Product[]
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  DELIVERED
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  customer_id  String
+  customer     Customer    @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  total_amount Float
+  status       OrderStatus @default(PENDING)
+  created_at   DateTime    @default(now())
+  items        OrderItem[]
+}
+
+model OrderItem {
+  id                String  @id @default(uuid())
+  order_id          String
+  order             Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id        String
+  product           Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  quantity          Int
+  applied_scheme    String?
+  price_at_purchase Float
+}
+
+model Ledger {
+  id                        String   @id @default(uuid())
+  customer_id               String   @unique
+  customer                  Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  total_outstanding_balance Float    @default(0.0)
+  last_payment_date         DateTime @default(now())
 }
