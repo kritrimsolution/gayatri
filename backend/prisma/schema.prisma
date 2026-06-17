@@ -1,0 +1,35 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Admin {
+  id            String @id @default(uuid())
+  email         String @unique
+  password_hash String
+  name          String
+}
+
+model Customer {
+  id                  String   @id @default(uuid())
+  shop_name           String
+  whatsapp_number     String   @unique
+  gst_number          String
+  drug_license_expiry DateTime
+  owner_birthday      DateTime
+}
+
+model Product {
+  id                 String @id @default(uuid())
+  medicine_name      String
+  generic_name       String
+  mrp                Float
+  b2b_discount_price Float
+  stock_status       String // "IN_STOCK" or "OUT_OF_STOCK"
+  in_stock_qty       Int    @default(0)
+  image_url          String
+}
