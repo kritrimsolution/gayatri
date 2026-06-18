@@ -64,6 +64,16 @@ async function main() {
 
   const customerDataList = [
     {
+      shop_name: 'Gayatri Pharma Admin (Test)',
+      whatsapp_number: '919104332333',
+      email: 'admin-test@gayatri.com',
+      password_hash: passwordHash,
+      gst_number: '24GSTADMIN999A1Z1',
+      owner_birthday: new Date(1980, today.getMonth(), today.getDate(), 12, 0, 0),
+      drug_license_expiry: new Date(today.getFullYear() + 2, today.getMonth(), today.getDate()),
+      outstanding: 0.00
+    },
+    {
       shop_name: 'Dhanvantari Medicos',
       whatsapp_number: '919876543210',
       email: 'shop1@gayatri.com',

@@ -9,6 +9,33 @@ const prisma = new PrismaClient();
 router.use(authMiddleware);
 router.use(requireAdmin);
 
+// GET ADMIN SETTINGS
+router.get('/admin-settings', async (req, res) => {
+  try {
+    const { getSettings } = require('../utils/settings');
+    const settings = getSettings();
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve admin settings.' });
+  }
+});
+
+// UPDATE ADMIN SETTINGS
+router.post('/admin-settings', async (req, res) => {
+  try {
+    const { updateSettings } = require('../utils/settings');
+    const { admin_mobile_number } = req.body;
+    if (!admin_mobile_number) {
+      return res.status(400).json({ error: 'Admin mobile number is required.' });
+    }
+    const cleanNumber = admin_mobile_number.replace(/\D/g, '');
+    const updated = updateSettings({ admin_mobile_number: cleanNumber });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update admin settings.' });
+  }
+});
+
 // GET all customers
 router.get('/', async (req, res) => {
   try {
@@ -131,6 +158,53 @@ router.delete('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting customer:', error);
     res.status(500).json({ error: 'Failed to delete customer.' });
+  }
+});
+
+// SEND BIRTHDAY GREETING MANUALLY
+router.post('/:id/send-birthday-wish', async (req, res) => {
+  try {
+    const { sendTextMessage } = require('../utils/whatsapp');
+    const customer = await prisma.customer.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found.' });
+    }
+
+    const greeting = `🎉 Happy Birthday to you, dear owner of ${customer.shop_name}! Wishing you a prosperous year ahead. Best regards, Gayatri Pharma. 🎂`;
+    await sendTextMessage(customer.whatsapp_number, greeting);
+
+    res.json({ message: `Birthday greeting successfully sent to ${customer.shop_name}!` });
+  } catch (error) {
+    console.error('Error sending manual birthday wish:', error);
+    res.status(500).json({ error: error.message || 'Failed to send birthday greeting.' });
+  }
+});
+
+// SEND LICENSE EXPIRY ALERT MANUALLY
+router.post('/:id/send-license-alert', async (req, res) => {
+  try {
+    const { sendTextMessage } = require('../utils/whatsapp');
+    const customer = await prisma.customer.findUnique({
+      where: { id: req.params.id }
+    });
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found.' });
+    }
+
+    const expiryDate = new Date(customer.drug_license_expiry).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+    const alertMessage = `⚠️ Dear ${customer.shop_name}, your drug license expires on ${expiryDate}. Please renew it to avoid any business interruptions.`;
+    await sendTextMessage(customer.whatsapp_number, alertMessage);
+
+    res.json({ message: `Drug license expiry alert successfully sent to ${customer.shop_name}!` });
+  } catch (error) {
+    console.error('Error sending manual license alert:', error);
+    res.status(500).json({ error: error.message || 'Failed to send license alert.' });
   }
 });
 

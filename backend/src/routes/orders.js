@@ -255,6 +255,8 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
       return res.json(order); // No change needed
     }
 
+    const lowStockAlerts = [];
+
     // Perform database operations in a transaction
     const updatedOrder = await prisma.$transaction(async (tx) => {
       // 1. If transitioning from PENDING to ACCEPTED, deduct stock & increment ledger outstanding balance
@@ -268,6 +270,10 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
 
           const newStock = prod.current_stock - item.quantity;
           const newStatus = newStock <= 0 ? 'OUT_OF_STOCK' : prod.stock_status;
+
+          if (newStock < 250) {
+            lowStockAlerts.push({ name: prod.medicine_name, stock: newStock });
+          }
 
           await tx.product.update({
             where: { id: item.product_id },
@@ -301,6 +307,18 @@ router.put('/:id/status', requireAdmin, async (req, res) => {
 
       return updated;
     });
+
+    // Trigger low stock alerts to admin asynchronously
+    if (lowStockAlerts.length > 0) {
+      try {
+        const { sendLowStockAlert } = require('../utils/whatsapp');
+        for (const alert of lowStockAlerts) {
+          sendLowStockAlert(alert.name, alert.stock);
+        }
+      } catch (err) {
+        console.error('Error triggering low stock alerts on order acceptance:', err);
+      }
+    }
 
     // WhatsApp Alerts based on status change
     try {

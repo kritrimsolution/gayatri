@@ -31,7 +31,9 @@ import {
   CreditCard,
   ChevronRight,
   TrendingUp,
-  Award
+  Award,
+  Cake,
+  Bell
 } from 'lucide-react';
 import { useCartStore } from './store/cart';
 
@@ -107,6 +109,11 @@ export default function AdminConsole() {
   const [broadcastLoading, setBroadcastLoading] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState(null);
 
+  // Admin Alert Destination Settings State
+  const [adminMobile, setAdminMobile] = useState('919104332333');
+  const [adminMobileInput, setAdminMobileInput] = useState('919104332333');
+  const [isEditingAdminMobile, setIsEditingAdminMobile] = useState(false);
+
   // Search/Filters State
   const [customerSearch, setCustomerSearch] = useState('');
   const [productSearch, setProductSearch] = useState('');
@@ -154,6 +161,7 @@ export default function AdminConsole() {
         fetchCustomers();
         fetchOrders();
         fetchAnalytics();
+        fetchAdminSettings();
       } else {
         fetchOrders(); // client orders
       }
@@ -253,6 +261,41 @@ export default function AdminConsole() {
       }
     } catch (err) {
       showToast('Error loading customers.', 'error');
+    }
+  };
+
+  const fetchAdminSettings = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/customers/admin-settings`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('gayatri_token')}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminMobile(data.admin_mobile_number);
+        setAdminMobileInput(data.admin_mobile_number);
+      }
+    } catch (err) {
+      console.error('Error loading admin settings:', err);
+    }
+  };
+
+  const saveAdminSettings = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/customers/admin-settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('gayatri_token')}`
+        },
+        body: JSON.stringify({ admin_mobile_number: adminMobileInput })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update admin number.');
+      setAdminMobile(data.admin_mobile_number);
+      setIsEditingAdminMobile(false);
+      showToast('Admin alert destination number updated successfully!');
+    } catch (err) {
+      showToast(err.message, 'error');
     }
   };
 
@@ -477,7 +520,12 @@ export default function AdminConsole() {
     setBroadcastLoading(true);
     setBroadcastResult(null);
 
-    const bodyParams = [selectedProduct.medicine_name];
+    const bodyParams = [
+      selectedProduct.medicine_name,
+      selectedProduct.generic_name || '',
+      selectedProduct.mrp || 0,
+      selectedProduct.b2b_discount_price || 0
+    ];
     const payload = {
       imageUrl: selectedProduct.image_url,
       templateName: templateType === 'CUSTOM' ? null : templateType,
@@ -520,6 +568,38 @@ export default function AdminConsole() {
     today.setHours(0,0,0,0);
     const diffTime = expiry - today;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const sendBirthdayWish = async (customerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/customers/${customerId}/send-birthday-wish`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send birthday greeting.');
+      showToast(data.message || 'Birthday wish dispatched successfully!');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const sendLicenseAlert = async (customerId) => {
+    try {
+      const res = await fetch(`${API_BASE}/customers/${customerId}/send-license-alert`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send license alert.');
+      showToast(data.message || 'License expiry alert dispatched successfully!');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
   };
 
   const openCustomerModal = (mode, data = null) => {
@@ -1031,7 +1111,7 @@ export default function AdminConsole() {
             )}
             <span>Server Time: {new Date().toLocaleTimeString()}</span>
             <button 
-              onClick={() => { checkApiHealth(); fetchProducts(); fetchOrders(); if (authRole === 'admin') { fetchCustomers(); fetchAnalytics(); } }}
+              onClick={() => { checkApiHealth(); fetchProducts(); fetchOrders(); if (authRole === 'admin') { fetchCustomers(); fetchAnalytics(); fetchAdminSettings(); } }}
               className="p-1.5 bg-white hover:bg-[#f8f9fc] border border-[#e3e8ee] hover:border-[#d3d8de] rounded-md text-slate-600 hover:text-slate-800 transition-all cursor-pointer"
               title="Sync Data"
             >
@@ -1225,6 +1305,62 @@ export default function AdminConsole() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#e3e8ee] font-medium text-[#3c4257]">
+                      {/* Pinned Gayatri Admin Alert Settings Row */}
+                      <tr className="bg-[#f0f4ff] hover:bg-[#e6eeff] transition-colors border-b border-[#cce0ff]">
+                        <td className="p-4 font-bold text-[#0a2540] flex items-center gap-1.5">
+                          <span className="text-sm">👑</span>
+                          <div>
+                            <span className="block font-black text-[#1a1f36]">Gayatri Admin</span>
+                            <span className="text-[9px] uppercase tracking-wider text-[#635bff] font-extrabold">System Alerts Recipient</span>
+                          </div>
+                        </td>
+                        <td className="p-4 font-mono text-[#3c4257]">
+                          {isEditingAdminMobile ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-slate-400 font-bold">+</span>
+                              <input
+                                type="text"
+                                value={adminMobileInput}
+                                onChange={(e) => setAdminMobileInput(e.target.value)}
+                                className="w-32 px-2 py-1 bg-white border border-[#e3e8ee] rounded text-[#3c4257] text-xs font-mono font-bold focus:outline-none focus:border-[#635bff]"
+                                placeholder="919104332333"
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-bold text-[#0a2540]">+{adminMobile}</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-[#635bff] font-semibold italic text-[10px]">ADMINISTRATOR</td>
+                        <td className="p-4 font-mono text-slate-400">SYSTEM</td>
+                        <td className="p-4 text-slate-400">N/A</td>
+                        <td className="p-4 text-slate-400">N/A</td>
+                        <td className="p-4 text-right space-x-2">
+                          {isEditingAdminMobile ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={saveAdminSettings}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => { setAdminMobileInput(adminMobile); setIsEditingAdminMobile(false); }}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded text-[10px] transition-all cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setIsEditingAdminMobile(true)}
+                              className="px-3 py-1 bg-[#635bff] hover:bg-[#5951e5] text-white font-bold rounded text-[10px] transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+                            >
+                              Edit Mobile
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
                       {filteredCustomers.length === 0 ? (
                         <tr>
                           <td colSpan="7" className="p-8 text-center text-slate-400">
@@ -1252,11 +1388,27 @@ export default function AdminConsole() {
                               <td className="p-4 text-[#4f566b]">{cust.email || 'N/A'}</td>
                               <td className="p-4 font-mono uppercase text-[#4f566b]">{cust.gst_number}</td>
                               <td className={`p-4 ${statusColor}`}>
-                                {formatDate(cust.drug_license_expiry)}
+                                <span>{formatDate(cust.drug_license_expiry)}</span>
                                 {daysLeft < 0 && <span className="block text-[9px] uppercase font-bold text-[#df1b41] mt-0.5">Expired</span>}
                                 {daysLeft >= 0 && daysLeft <= 30 && <span className="block text-[9px] uppercase font-bold text-[#b26b00] mt-0.5">Expires in {daysLeft} days</span>}
+                                <button
+                                  onClick={() => sendLicenseAlert(cust.id)}
+                                  className="mt-1.5 flex items-center gap-1 text-[9px] text-[#635bff] hover:text-[#5951e5] font-semibold bg-[#635bff]/5 hover:bg-[#635bff]/10 border border-[#635bff]/10 px-2 py-0.5 rounded cursor-pointer transition-all active:scale-[0.98] shadow-sm select-none"
+                                  title="Send manual WhatsApp license expiry alert"
+                                >
+                                  <Bell className="w-2.5 h-2.5" /> Expiry Alert
+                                </button>
                               </td>
-                              <td className="p-4 text-[#4f566b]">{formatDate(cust.owner_birthday)}</td>
+                              <td className="p-4 text-[#4f566b]">
+                                <span>{formatDate(cust.owner_birthday)}</span>
+                                <button
+                                  onClick={() => sendBirthdayWish(cust.id)}
+                                  className="mt-1.5 flex items-center gap-1 text-[9px] text-[#22c55e] hover:text-[#16a34a] font-semibold bg-[#22c55e]/5 hover:bg-[#22c55e]/10 border border-[#22c55e]/10 px-2 py-0.5 rounded cursor-pointer transition-all active:scale-[0.98] shadow-sm select-none"
+                                  title="Send manual WhatsApp birthday wish"
+                                >
+                                  <Cake className="w-2.5 h-2.5" /> Birthday Wish
+                                </button>
+                              </td>
                               <td className="p-4 text-right space-x-2">
                                 <button
                                   onClick={() => openCustomerModal('edit', cust)}

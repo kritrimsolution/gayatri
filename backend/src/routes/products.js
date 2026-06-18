@@ -121,7 +121,7 @@ router.post('/', upload.single('image'), async (req, res) => {
         mrp: mrpVal,
         b2b_discount_price: b2bVal,
         stock_status,
-        in_stock_qty: qtyVal,
+        current_stock: qtyVal,
         image_url: processedUrl // Save processed, watermarked URL path
       }
     });
@@ -131,6 +131,16 @@ router.post('/', upload.single('image'), async (req, res) => {
       fs.unlinkSync(tempImagePath);
     } catch (err) {
       console.warn('Failed to delete temporary raw file:', err.message);
+    }
+
+    // Low stock alert check
+    if (qtyVal < 250) {
+      try {
+        const { sendLowStockAlert } = require('../utils/whatsapp');
+        sendLowStockAlert(product.medicine_name, qtyVal);
+      } catch (err) {
+        console.error('Error triggering low stock alert on creation:', err);
+      }
     }
 
     res.status(201).json(product);
@@ -163,7 +173,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     const medName = medicine_name || existing.medicine_name;
     const genName = generic_name || existing.generic_name;
     const stockVal = stock_status || existing.stock_status;
-    const qtyVal = in_stock_qty !== undefined ? parseInt(in_stock_qty, 10) : existing.in_stock_qty;
+    const qtyVal = in_stock_qty !== undefined ? parseInt(in_stock_qty, 10) : existing.current_stock;
 
     let processedUrl = existing.image_url;
 
@@ -193,10 +203,20 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         mrp: mrpVal,
         b2b_discount_price: b2bVal,
         stock_status: stockVal,
-        in_stock_qty: qtyVal,
+        current_stock: qtyVal,
         image_url: processedUrl
       }
     });
+
+    // Low stock alert check
+    if (qtyVal < 250) {
+      try {
+        const { sendLowStockAlert } = require('../utils/whatsapp');
+        sendLowStockAlert(updated.medicine_name, qtyVal);
+      } catch (err) {
+        console.error('Error triggering low stock alert on update:', err);
+      }
+    }
 
     res.json(updated);
   } catch (error) {
