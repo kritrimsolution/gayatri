@@ -1,0 +1,110 @@
+# Marg ERP Integration Guide: Automated WhatsApp Invoice Delivery
+
+This document outlines the feasibility and architectural options for integrating the **Gayatri Pharma Automation Platform** with **Marg ERP** (a widely used pharma distributor and retail billing software in India). 
+
+The primary goal is to **automatically send a WhatsApp message with the invoice PDF** to the corresponding customer (medical shop) immediately after an invoice is generated in Marg ERP.
+
+---
+
+## 1. Feasibility Analysis
+**Yes, this integration is fully possible.** 
+Marg ERP is traditionally a Windows desktop-based application (often using visual FoxPro/DBF files or local MS SQL database configurations). Because it runs locally on the distributor's office/warehouse machine, the integration requires a bridge between the local Marg ERP setup and our cloud/local Express backend.
+
+Below are the three primary options to achieve this integration.
+
+---
+
+## 2. Integration Architecture Options
+
+### Option A: Local File Watcher Agent (Recommended)
+This is the most reliable, non-intrusive, and easiest method to implement. It does not require modifying Marg ERP code or database schemas.
+
+```mermaid
+sequenceDiagram
+    participant Marg as Marg ERP Desktop
+    participant Watcher as Local Watcher Agent
+    participant API as Gayatri Backend (Express)
+    participant Twilio as Twilio API
+    participant Client as Client's WhatsApp
+
+    Marg->>Marg: Generate & Save Invoice
+    Marg->>Watcher: Auto-export Invoice PDF to C:\MargOutbox\
+    Note over Watcher: Watcher detects new PDF
+    Watcher->>Watcher: Extract Phone/GSTIN from PDF filename or content
+    Watcher->>API: POST /api/broadcast/send-invoice (upload PDF + phone)
+    API->>API: Save PDF to backend/public/processed/
+    API->>Twilio: Trigger WhatsApp Media Message
+    Twilio->>Client: Deliver message with PDF attachment
+```
+
+#### How it works:
+1. **Marg Configuration**: Marg ERP is configured to automatically print/save a PDF version of every generated invoice to a specific local folder (e.g., `C:\MargERP\Exports\`). Marg has built-in support for naming these files dynamically (e.g., `INV_919876543210_GSTIN12345.pdf`).
+2. **Local Agent**: A lightweight Windows background service (written in Node.js or Python) runs on the billing machine.
+3. **Monitoring**: The agent monitors the folder for new files using filesystem watchers.
+4. **Extraction & Upload**: When a new invoice PDF appears, the agent reads it, extracts the phone number/GSTIN from the file metadata or parses it using a basic PDF text scraper, and makes an HTTP multipart upload request to our backend API (`/api/broadcast/send-invoice`).
+5. **WhatsApp Delivery**: Our backend receives the PDF, hosts it on the static public folder, and immediately triggers a WhatsApp media message through Twilio.
+
+---
+
+### Option B: Custom Command Hook in Marg ERP
+Marg ERP has configuration options to run custom script commands (`.bat`, `.exe`, or `.vbs`) during the printing/saving event of an invoice.
+
+```mermaid
+graph LR
+    A[Marg ERP Save Bill] --> B[Trigger External Batch File]
+    B --> C[Pass parameters: BillNo, Phone, PDFPath]
+    C --> D[Curl request to Gayatri API]
+    D --> E[WhatsApp Delivered]
+```
+
+#### How it works:
+1. **Marg Setup**: In Marg ERP's billing settings, we configure a custom command execution hook on "Save Bill" or "Print Bill".
+2. **Script Trigger**: Marg executes a helper command-line script (e.g., `send_whatsapp.bat`) and passes arguments:
+   ```cmd
+   send_whatsapp.bat <CustomerPhone> <InvoiceNumber> <LocalPDFPath>
+   ```
+3. **API Call**: The batch script uses a standard utility like `curl` to upload the PDF directly to our Express API.
+
+---
+
+### Option C: Direct DB Syncing (SQL/DBF Reader)
+If Marg ERP is backed by MS SQL (or DBF tables), we can run a periodic sync job.
+
+#### How it works:
+1. A cron job queries the local Marg ERP database tables (`Bill_Header`, `Customer_Master`) every 60 seconds to check for new invoices.
+2. It fetches the customer phone number and the invoice metadata.
+3. It generates the invoice PDF via a command-line PDF generator and triggers the API.
+
+---
+
+## 3. Comparison of Approaches
+
+| Criteria | Option A: File Watcher (Recommended) | Option B: Command Hook | Option C: DB Syncing |
+| :--- | :--- | :--- | :--- |
+| **Development Time** | **Fast** (1-2 days) | Medium (Requires Marg-side setup) | High (Database-dependent) |
+| **Robustness** | **Very High** (Works even if network goes offline temporarily) | Medium (Fails if script execution is blocked) | High |
+| **Marg Modifications** | **None** (Only standard auto-print path config) | Low (Needs command configuration) | None |
+| **Error Handling** | **Excellent** (Failed files can be placed in an `/errors/` folder) | Low (Hard to capture CLI errors) | High (DB status flags) |
+
+---
+
+## 4. Proposed API Endpoint Schema
+To support this integration, we will add the following endpoint to our backend:
+
+```http
+POST /api/broadcast/send-invoice
+Content-Type: multipart/form-data
+
+Fields:
+- whatsapp_number: "919876543210" (Extracted from customer account)
+- invoice_number: "INV-2026-0043"
+- amount: "15420.50"
+- file: [Binary PDF File]
+```
+
+---
+
+## 5. Next Steps for Implementation
+1. **Verify Marg PDF Export**: Confirm if the client's version of Marg ERP can auto-export invoices to a local directory upon saving.
+2. **Develop the Local Watcher**: Create a small script that watches a directory and uploads files.
+3. **Expose Invoice Endpoint**: Extend our Express backend to accept these incoming invoice payloads and forward them using our existing Twilio client.
