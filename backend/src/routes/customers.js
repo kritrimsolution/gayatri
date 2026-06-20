@@ -36,10 +36,29 @@ router.post('/admin-settings', async (req, res) => {
   }
 });
 
-// GET all customers
+// GET all customers with search and route filters
 router.get('/', async (req, res) => {
   try {
+    const { search, route } = req.query;
+    
+    // Construct filter condition
+    const where = {};
+    
+    if (route) {
+      where.route_area = route;
+    }
+    
+    if (search) {
+      where.OR = [
+        { shop_name: { contains: search, mode: 'insensitive' } },
+        { owner_name: { contains: search, mode: 'insensitive' } },
+        { whatsapp: { contains: search } },
+        { gst_number: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
     const customers = await prisma.customer.findMany({
+      where,
       orderBy: { shop_name: 'asc' }
     });
     res.json(customers);
@@ -68,15 +87,33 @@ router.get('/:id', async (req, res) => {
 // CREATE new customer
 router.post('/', async (req, res) => {
   try {
-    const { shop_name, whatsapp_number, gst_number, drug_license_expiry, owner_birthday } = req.body;
+    const { 
+      shop_name, 
+      owner_name, 
+      mobile, 
+      whatsapp, 
+      address, 
+      route_area, 
+      gst_number, 
+      drug_license_expiry, 
+      birthday, 
+      credit_limit,
+      outstanding_balance
+    } = req.body;
     
-    if (!shop_name || !whatsapp_number || !gst_number || !drug_license_expiry || !owner_birthday) {
-      return res.status(400).json({ error: 'All customer fields are required.' });
+    if (!shop_name || !whatsapp || !gst_number || !drug_license_expiry || !birthday) {
+      return res.status(400).json({ error: 'Shop Name, WhatsApp, GST, License Expiry, and Birthday are required.' });
+    }
+
+    // Format and clean whatsapp digits
+    let cleanedWhatsapp = whatsapp.replace(/\D/g, '');
+    if (cleanedWhatsapp.length === 10) {
+      cleanedWhatsapp = '91' + cleanedWhatsapp;
     }
 
     // Check if number already exists
     const existing = await prisma.customer.findUnique({
-      where: { whatsapp_number }
+      where: { whatsapp: cleanedWhatsapp }
     });
     if (existing) {
       return res.status(400).json({ error: 'WhatsApp number is already registered to another medical shop.' });
@@ -85,14 +122,28 @@ router.post('/', async (req, res) => {
     const customer = await prisma.customer.create({
       data: {
         shop_name,
-        whatsapp_number,
+        owner_name,
+        mobile,
+        whatsapp: cleanedWhatsapp,
+        address,
+        route_area: route_area || 'Rajkot',
         gst_number,
         drug_license_expiry: new Date(drug_license_expiry),
-        owner_birthday: new Date(owner_birthday)
+        birthday: new Date(birthday),
+        credit_limit: parseFloat(credit_limit || 0),
+        outstanding_balance: parseFloat(outstanding_balance || 0)
       }
     });
 
-    res.status(201).json(customer);
+    // Generate B2B invite link/credentials placeholder (Phase 2 preview invite)
+    const inviteLink = `http://localhost:3000/customer/setup?id=${customer.id}`;
+    const inviteText = `Welcome to Gayatri Pharma! Your B2B account is registered. We will send you offers and outstanding alerts on WhatsApp. Portal access is coming soon in Phase 2! Link: ${inviteLink}`;
+
+    res.status(201).json({
+      customer,
+      inviteLink,
+      inviteText
+    });
   } catch (error) {
     console.error('Error creating customer:', error);
     res.status(500).json({ error: 'Failed to create customer.' });
@@ -102,7 +153,19 @@ router.post('/', async (req, res) => {
 // UPDATE customer
 router.put('/:id', async (req, res) => {
   try {
-    const { shop_name, whatsapp_number, gst_number, drug_license_expiry, owner_birthday } = req.body;
+    const { 
+      shop_name, 
+      owner_name, 
+      mobile, 
+      whatsapp, 
+      address, 
+      route_area, 
+      gst_number, 
+      drug_license_expiry, 
+      birthday, 
+      credit_limit,
+      outstanding_balance
+    } = req.body;
     
     // Check if customer exists
     const existingCustomer = await prisma.customer.findUnique({
@@ -112,13 +175,21 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Customer not found.' });
     }
 
-    // Check if number exists on another customer
-    if (whatsapp_number && whatsapp_number !== existingCustomer.whatsapp_number) {
-      const duplicate = await prisma.customer.findUnique({
-        where: { whatsapp_number }
-      });
-      if (duplicate) {
-        return res.status(400).json({ error: 'WhatsApp number is already registered to another medical shop.' });
+    let cleanedWhatsapp = whatsapp;
+    if (whatsapp) {
+      cleanedWhatsapp = whatsapp.replace(/\D/g, '');
+      if (cleanedWhatsapp.length === 10) {
+        cleanedWhatsapp = '91' + cleanedWhatsapp;
+      }
+
+      // Check if number exists on another customer
+      if (cleanedWhatsapp !== existingCustomer.whatsapp) {
+        const duplicate = await prisma.customer.findUnique({
+          where: { whatsapp: cleanedWhatsapp }
+        });
+        if (duplicate) {
+          return res.status(400).json({ error: 'WhatsApp number is already registered to another medical shop.' });
+        }
       }
     }
 
@@ -126,10 +197,16 @@ router.put('/:id', async (req, res) => {
       where: { id: req.params.id },
       data: {
         shop_name: shop_name || undefined,
-        whatsapp_number: whatsapp_number || undefined,
+        owner_name: owner_name || undefined,
+        mobile: mobile || undefined,
+        whatsapp: cleanedWhatsapp || undefined,
+        address: address || undefined,
+        route_area: route_area || undefined,
         gst_number: gst_number || undefined,
         drug_license_expiry: drug_license_expiry ? new Date(drug_license_expiry) : undefined,
-        owner_birthday: owner_birthday ? new Date(owner_birthday) : undefined
+        birthday: birthday ? new Date(birthday) : undefined,
+        credit_limit: credit_limit !== undefined ? parseFloat(credit_limit) : undefined,
+        outstanding_balance: outstanding_balance !== undefined ? parseFloat(outstanding_balance) : undefined
       }
     });
 

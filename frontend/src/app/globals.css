@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+<<<<<<< HEAD
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
@@ -137,4 +138,22 @@ body {
   border: 8px solid transparent;
   border-left-color: #dcf8c6;
   border-top-color: #dcf8c6;
+=======
+@theme {
+  --color-brand-primary: #0c4a43;
+  --color-brand-dark: #0f766e;
+  --color-brand-accent: #10b981;
+  --color-brand-mint: #14b8a6;
+  --color-brand-bg: #fbfaf7;
+  --color-brand-text: #0a3732;
+  --color-brand-dark-text: #0f172a;
+}
+
+body {
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  background-color: var(--color-brand-bg);
+  color: var(--color-brand-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+>>>>>>> 69f7b39390b953746f3da607611792d541ea67bc
 }

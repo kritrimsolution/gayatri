@@ -9,14 +9,16 @@ generator client {
 
 model Admin {
   id            String @id @default(uuid())
+  name          String
   email         String @unique
   password_hash String
-  name          String
+  role          String @default("STAFF") // OWNER or STAFF
 }
 
 model Customer {
-  id                  String   @id @default(uuid())
+  id                  String        @id @default(uuid())
   shop_name           String
+<<<<<<< HEAD
   whatsapp_number     String   @unique
   email               String?  @unique
   password_hash       String   @default("$2a$10$vI8aWBnW3f5.fO9dfb05p.QyKxW6P46qZk2B23N5zWc0987654321") // bcrypt hash for 'password123'
@@ -90,4 +92,79 @@ model Ledger {
   customer                  Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
   total_outstanding_balance Float    @default(0.0)
   last_payment_date         DateTime @default(now())
+=======
+  owner_name          String?
+  mobile              String?
+  whatsapp            String        @unique // Used as the primary B2B WhatsApp contact
+  address             String?
+  route_area          String?       // Route/area tag (e.g., Ahmedabad East, Rajkot)
+  gst_number          String
+  drug_license_expiry DateTime
+  birthday            DateTime
+  credit_limit        Float         @default(0)
+  outstanding_balance Float         @default(0)
+  last_payment_date   DateTime?
+  last_order_date     DateTime?
+  invoices            Invoice[]
+  dispatchLogs        DispatchLog[]
+}
+
+model Product {
+  id           String    @id @default(uuid())
+  name         String
+  generic_name String    // Composition / generic formula
+  company      String
+  pack_size    String?   // e.g., 10 Tablets, 100ml
+  mrp          Float
+  pts          Float     // Price to Shop / trade discount price
+  tax_percent  Float     @default(12.0)
+  stock_qty    Int       @default(0)
+  expiry_date  DateTime
+  category     String    // Tablet, Capsule, Injection, Syrup, Cream, Drops
+  image_url    String?
+  offer_scheme String?   // Special offer/scheme text (e.g., Buy 10 Get 1 Free)
+}
+
+model Scheme {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  product_id  String?  // Associated product ID
+  min_qty     Int      @default(10)
+  free_qty    Int      @default(1)
+  start_date  DateTime
+  end_date    DateTime
+  status      Boolean  @default(true)
+}
+
+model Invoice {
+  id             String   @id @default(uuid())
+  invoice_number String   @unique
+  customer_id    String
+  customer       Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  date           DateTime @default(now())
+  amount         Float
+  status         String   @default("UNPAID") // PAID or UNPAID
+  items          Json?    // Array of { product, qty, price, discount }
+}
+
+model Campaign {
+  id             String   @id @default(uuid())
+  title          String
+  type           String   // PRODUCT_LAUNCH, SCHEME, FESTIVAL
+  sentCount      Int      @default(0)
+  deliveredCount Int      @default(0)
+  failedCount    Int      @default(0)
+  createdAt      DateTime @default(now())
+}
+
+model DispatchLog {
+  id            String    @id @default(uuid())
+  customer_id   String?
+  customer      Customer? @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  type          String    // BIRTHDAY, REMINDER, PRODUCT_BROADCAST, FESTIVAL
+  status        String    // SENT or FAILED
+  error_message String?
+  timestamp     DateTime  @default(now())
+>>>>>>> 69f7b39390b953746f3da607611792d541ea67bc
 }

@@ -1,25 +1,21 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata = {
-  title: "Gayatri Pharma - B2B Admin & WhatsApp Broadcast Center",
+  title: "Gayatri Pharma - B2B Distributor Portal",
   description: "Secure B2B distribution control panel and automated WhatsApp messaging console.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-teal-500 selection:text-slate-900">
+    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-[#fbfaf7] text-[#0f172a] selection:bg-[#10b981]/30 selection:text-[#0c4a43]">
         {children}
       </body>
     </html>

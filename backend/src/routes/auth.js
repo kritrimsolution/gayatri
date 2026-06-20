@@ -69,7 +69,11 @@ router.post('/login', async (req, res) => {
         id: admin.id,
         email: admin.email,
         name: admin.name,
+<<<<<<< HEAD
         role: 'admin'
+=======
+        role: admin.role
+>>>>>>> 69f7b39390b953746f3da607611792d541ea67bc
       }
     });
   } catch (error) {
