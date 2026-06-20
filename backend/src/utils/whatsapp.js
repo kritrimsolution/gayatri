@@ -1,141 +1,125 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
-const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
-const VERSION = process.env.WHATSAPP_VERSION || 'v20.0';
+const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const FROM_NUMBER = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+// In sandbox, we may want to overwrite and send to a specific trial number for debugging
+const TRIAL_NUMBER = process.env.TWILIO_TRIAL_PHONE_NUMBER;
 
 /**
- * Send a WhatsApp Message via Meta Cloud API
- * @param {object} payload - The message payload
- * @returns {Promise<object>} - Response from Meta API or mock response
+ * Format phone number to Twilio WhatsApp standard: whatsapp:+919876543210
+ * @param {string} phone - Input phone number
  */
-async function sendMetaRequest(payload) {
-  const url = `https://graph.facebook.com/${VERSION}/${PHONE_NUMBER_ID}/messages`;
-  
-  // If we don't have valid credentials, simulate success in dev
-  if (!WHATSAPP_TOKEN || WHATSAPP_TOKEN.startsWith('EAAGb37BZAoZB0BO') || !PHONE_NUMBER_ID || PHONE_NUMBER_ID === '1234567890') {
-    console.log(`[WhatsApp Mock API] Sent message to ${payload.to}. Payload:`, JSON.stringify(payload, null, 2));
+function formatPhoneNumber(phone) {
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    cleaned = '91' + cleaned;
+  }
+  return `whatsapp:+${cleaned}`;
+}
+
+/**
+ * Sends a message via Twilio REST API
+ * @param {string} to - Recipient number
+ * @param {string} body - Message body text
+ * @param {string} [mediaUrl] - Optional media URL (image or invoice PDF)
+ * @returns {Promise<object>}
+ */
+async function sendTwilioMessage(to, body, mediaUrl = null) {
+  // Determine final recipient. If trial number exists in env and we are running in local test mode, we can route it there to prevent spamming real clients.
+  const formattedTo = formatPhoneNumber(to);
+  const targetTo = TRIAL_NUMBER && TRIAL_NUMBER.includes('+') ? TRIAL_NUMBER : formattedTo;
+
+  // Check if Twilio SID and token are configured
+  const hasCredentials = ACCOUNT_SID && ACCOUNT_SID.startsWith('AC') && AUTH_TOKEN && AUTH_TOKEN.length > 5;
+
+  if (!hasCredentials) {
+    console.log(`[WhatsApp Mock Twilio API]
+      To: ${targetTo} (original: ${formattedTo})
+      From: ${FROM_NUMBER}
+      Body: ${body}
+      MediaUrl: ${mediaUrl || 'None'}
+    `);
     return {
       success: true,
       mock: true,
-      message_id: `wamid.HBgMOTE1OTIzNDU2Nzg5FQIAERgSRDMxQzE4QzNFNUUwRkQ4N0FDAA==`
+      sid: `SMmock_${Date.now()}`
     };
+  }
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${ACCOUNT_SID}/Messages.json`;
+  const auth = Buffer.from(`${ACCOUNT_SID}:${AUTH_TOKEN}`).toString('base64');
+
+  // Construct URL-encoded form body
+  const params = new URLSearchParams();
+  params.append('From', FROM_NUMBER);
+  params.append('To', targetTo);
+  params.append('Body', body);
+  if (mediaUrl) {
+    // Make sure mediaUrl is absolute. If it's a relative path, we prepend APP_URL
+    let absoluteUrl = mediaUrl;
+    if (mediaUrl.startsWith('/')) {
+      const appUrl = process.env.APP_URL || 'http://localhost:5000';
+      absoluteUrl = `${appUrl}${mediaUrl}`;
+    }
+    params.append('MediaUrl', absoluteUrl);
   }
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${WHATSAPP_TOKEN}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: JSON.stringify(payload)
+      body: params.toString()
     });
 
     const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(data.error?.message || 'Meta API returned an error');
+      throw new Error(data.message || 'Twilio REST API returned an error');
     }
-    return { success: true, ...data };
+
+    console.log(`[Twilio Success] Message sent to ${targetTo}. SID: ${data.sid}`);
+    return { success: true, sid: data.sid, twilioResponse: data };
   } catch (error) {
-    console.error(`[WhatsApp API Error] Failed to send to ${payload.to}:`, error.message);
+    console.error(`[Twilio Error] Failed to send message to ${targetTo}:`, error.message);
     throw error;
   }
 }
 
 /**
- * Send a text message
- * @param {string} to - Recipient phone number (with country code)
- * @param {string} text - Message content
+ * Standard text sender compatibility mapping
  */
 async function sendTextMessage(to, text) {
-  const payload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: formatPhoneNumber(to),
-    type: 'text',
-    text: { preview_url: false, body: text }
-  };
-  return sendMetaRequest(payload);
+  return sendTwilioMessage(to, text);
 }
 
 /**
- * Send an image message
- * @param {string} to - Recipient phone number
- * @param {string} imageUrl - Publicly accessible URL of the image
- * @param {string} [caption] - Image caption
+ * Standard image sender compatibility mapping
  */
 async function sendImageMessage(to, imageUrl, caption) {
-  const payload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: formatPhoneNumber(to),
-    type: 'image',
-    image: {
-      link: imageUrl,
-      caption: caption || ''
-    }
-  };
-  return sendMetaRequest(payload);
+  return sendTwilioMessage(to, caption, imageUrl);
 }
 
 /**
- * Send a template message with image header
- * @param {string} to - Recipient phone number
- * @param {string} templateName - Template name
- * @param {string} imageUrl - Public image URL for header
- * @param {array} bodyParams - Variables for the template body (array of strings)
+ * Sends a template-style message with image header (mapped to a single twilio message for simplified Phase 1)
  */
 async function sendTemplateWithImage(to, templateName, imageUrl, bodyParams = []) {
-  const parameters = bodyParams.map(param => ({
-    type: 'text',
-    text: String(param)
-  }));
-
-  const payload = {
-    messaging_product: 'whatsapp',
-    recipient_type: 'individual',
-    to: formatPhoneNumber(to),
-    type: 'template',
-    template: {
-      name: templateName,
-      language: { code: 'en_US' },
-      components: [
-        {
-          type: 'header',
-          parameters: [
-            {
-              type: 'image',
-              image: { link: imageUrl }
-            }
-          ]
-        },
-        {
-          type: 'body',
-          parameters: parameters
-        }
-      ]
-    }
-  };
-  return sendMetaRequest(payload);
-}
-
-/**
- * Format phone number to WhatsApp standards (strip characters, ensure country code)
- * @param {string} phone - Input phone number
- */
-function formatPhoneNumber(phone) {
-  // Strip non-numeric characters
-  let cleaned = phone.replace(/\D/g, '');
-  // Default to Indian country code (91) if it's 10 digits
-  if (cleaned.length === 10) {
-    cleaned = '91' + cleaned;
+  // Generate text body from parameters
+  let text = `Announcement from Gayatri Pharma:\n`;
+  if (templateName === 'PRODUCT_LAUNCH') {
+    text += `New Product Launched: ${bodyParams[0]}!\nNow available at discount rates. Contact us to book.`;
+  } else {
+    text += bodyParams.join('\n');
   }
-  return cleaned;
+  return sendTwilioMessage(to, text, imageUrl);
 }
 
 module.exports = {
+  sendTwilioMessage,
   sendTextMessage,
   sendImageMessage,
   sendTemplateWithImage,

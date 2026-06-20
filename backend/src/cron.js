@@ -14,19 +14,36 @@ async function runBirthdayCheck() {
 
     const customers = await prisma.customer.findMany();
     const birthdayCustomers = customers.filter(c => {
-      const bdate = new Date(c.owner_birthday);
+      const bdate = new Date(c.birthday);
       return bdate.getMonth() === todayMonth && bdate.getDate() === todayDate;
     });
 
     console.log(`[Cron] Found ${birthdayCustomers.length} customer(s) with birthday today.`);
     
     for (const customer of birthdayCustomers) {
-      const greeting = `🎉 Happy Birthday to you, dear owner of ${customer.shop_name}! Wishing you a prosperous year ahead. Best regards, Gayatri Pharma. 🎂`;
+      const greeting = `Happy Birthday Sir 🎂\n\nThank you for your continued support.\n\nRegards,\nGayatri Pharma`;
       try {
-        await sendTextMessage(customer.whatsapp_number, greeting);
-        console.log(`[Cron] Sent birthday greeting to ${customer.shop_name} (${customer.whatsapp_number})`);
+        await sendTextMessage(customer.whatsapp, greeting);
+        console.log(`[Cron] Sent birthday greeting to ${customer.shop_name} (${customer.whatsapp})`);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'BIRTHDAY',
+            status: 'SENT'
+          }
+        });
       } catch (err) {
         console.error(`[Cron] Failed to send birthday greeting to ${customer.shop_name}:`, err.message);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'BIRTHDAY',
+            status: 'FAILED',
+            error_message: err.message
+          }
+        });
       }
     }
   } catch (error) {
@@ -41,7 +58,6 @@ async function runLicenseExpiryCheck() {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 15);
     
-    // Set time range for target date (ignoring exact hours/minutes)
     const startOfDay = new Date(targetDate);
     startOfDay.setHours(0, 0, 0, 0);
     
@@ -60,16 +76,76 @@ async function runLicenseExpiryCheck() {
     console.log(`[Cron] Found ${expiringCustomers.length} customer(s) whose drug license expires in 15 days.`);
 
     for (const customer of expiringCustomers) {
-      const alertMessage = `⚠️ Dear ${customer.shop_name}, your drug license expires in 15 days (on ${new Date(customer.drug_license_expiry).toLocaleDateString()}). Please renew it to avoid any business interruptions.`;
+      const alertMessage = `Dear Customer,\n\nYour Drug License is expiring in 15 days.\n\nKindly renew it to avoid business interruption.\n\nRegards,\nGayatri Pharma`;
       try {
-        await sendTextMessage(customer.whatsapp_number, alertMessage);
-        console.log(`[Cron] Sent license expiry alert to ${customer.shop_name} (${customer.whatsapp_number})`);
+        await sendTextMessage(customer.whatsapp, alertMessage);
+        console.log(`[Cron] Sent license expiry alert to ${customer.shop_name} (${customer.whatsapp})`);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'REMINDER',
+            status: 'SENT'
+          }
+        });
       } catch (err) {
         console.error(`[Cron] Failed to send license expiry alert to ${customer.shop_name}:`, err.message);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'REMINDER',
+            status: 'FAILED',
+            error_message: err.message
+          }
+        });
       }
     }
   } catch (error) {
     console.error('[Cron] Error in License Expiry Task:', error);
+  }
+}
+
+// Task C: Payment Reminders (Customers with outstanding dues > 0)
+async function runPaymentReminderCheck() {
+  console.log('[Cron] Running Task C: Outstanding Payment Reminders...');
+  try {
+    const debtors = await prisma.customer.findMany({
+      where: {
+        outstanding_balance: { gt: 0 }
+      }
+    });
+
+    console.log(`[Cron] Found ${debtors.length} customer(s) with outstanding dues.`);
+
+    for (const customer of debtors) {
+      const reminderMsg = `Dear ${customer.shop_name},\n\nOutstanding Amount:\n₹${customer.outstanding_balance.toFixed(2)}\n\nKindly arrange payment at your earliest convenience.\n\nThank You\nGayatri Pharma`;
+      try {
+        await sendTextMessage(customer.whatsapp, reminderMsg);
+        console.log(`[Cron] Sent payment reminder to ${customer.shop_name} (${customer.whatsapp})`);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'REMINDER',
+            status: 'SENT'
+          }
+        });
+      } catch (err) {
+        console.error(`[Cron] Failed to send payment reminder to ${customer.shop_name}:`, err.message);
+        
+        await prisma.dispatchLog.create({
+          data: {
+            customer_id: customer.id,
+            type: 'REMINDER',
+            status: 'FAILED',
+            error_message: err.message
+          }
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[Cron] Error in Payment Reminder Task:', error);
   }
 }
 
@@ -80,6 +156,7 @@ function scheduleJobs() {
     console.log('[Cron] Starting scheduled tasks...');
     await runBirthdayCheck();
     await runLicenseExpiryCheck();
+    await runPaymentReminderCheck();
     console.log('[Cron] Scheduled tasks completed.');
   });
   
@@ -92,6 +169,7 @@ if (process.argv.includes('--run-now')) {
   (async () => {
     await runBirthdayCheck();
     await runLicenseExpiryCheck();
+    await runPaymentReminderCheck();
     console.log('[Cron] Immediate run completed.');
     process.exit(0);
   })();
@@ -101,5 +179,6 @@ if (process.argv.includes('--run-now')) {
 
 module.exports = {
   runBirthdayCheck,
-  runLicenseExpiryCheck
+  runLicenseExpiryCheck,
+  runPaymentReminderCheck
 };

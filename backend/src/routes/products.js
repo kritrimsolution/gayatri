@@ -27,7 +27,6 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    // Only accept images
     const filetypes = /jpeg|jpg|png|webp/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -42,11 +41,27 @@ const upload = multer({
 // Protect all product routes
 router.use(authMiddleware);
 
-// GET all products
+// GET all products with optional filters/search
 router.get('/', async (req, res) => {
   try {
+    const { search, category } = req.query;
+    
+    const where = {};
+    if (category) {
+      where.category = category;
+    }
+    
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { generic_name: { contains: search, mode: 'insensitive' } },
+        { company: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
     const products = await prisma.product.findMany({
-      orderBy: { medicine_name: 'asc' }
+      where,
+      orderBy: { name: 'asc' }
     });
     res.json(products);
   } catch (error) {
@@ -71,61 +86,86 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// CREATE new product with image processing
+// CREATE new product with image watermarking
 router.post('/', upload.single('image'), async (req, res) => {
   let tempImagePath = null;
   try {
-    const { medicine_name, generic_name, mrp, b2b_discount_price, stock_status, in_stock_qty } = req.body;
+    const { 
+      name, 
+      generic_name, 
+      company, 
+      pack_size, 
+      mrp, 
+      pts, 
+      tax_percent, 
+      stock_qty, 
+      expiry_date, 
+      category, 
+      offer_scheme 
+    } = req.body;
 
-    if (!medicine_name || !generic_name || !mrp || !b2b_discount_price || !stock_status) {
-      // Clean up uploaded file if validation failed
+    if (!name || !generic_name || !company || !mrp || !pts || !expiry_date || !category) {
       if (req.file) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ error: 'All fields (medicine_name, generic_name, mrp, b2b_discount_price, stock_status) are required.' });
+      return res.status(400).json({ error: 'Name, Composition, Company, MRP, PTS, Expiry, and Category are required.' });
     }
-
-    if (!req.file) {
-      return res.status(400).json({ error: 'Product image is required.' });
-    }
-
-    tempImagePath = req.file.path;
-    const filename = req.file.filename;
 
     const mrpVal = parseFloat(mrp);
-    const b2bVal = parseFloat(b2b_discount_price);
-    const qtyVal = in_stock_qty ? parseInt(in_stock_qty, 10) : 0;
+    const ptsVal = parseFloat(pts);
+    const taxVal = parseFloat(tax_percent || 12.0);
+    const stockVal = parseInt(stock_qty || 0, 10);
+    const expiryVal = new Date(expiry_date);
 
-    console.log(`Processing image for ${medicine_name}: Raw: ${tempImagePath}`);
-    
-    // Process image through Python engine
-    const processedUrl = await processProductImage(
-      tempImagePath,
-      filename,
-      medicine_name,
-      mrpVal,
-      b2bVal
-    );
+    let processedUrl = null;
+    if (req.file) {
+      tempImagePath = req.file.path;
+      const filename = req.file.filename;
+      
+      console.log(`Processing image for ${name}: Raw: ${tempImagePath}`);
+      
+      // Process image through Python engine
+      try {
+        processedUrl = await processProductImage(
+          tempImagePath,
+          filename,
+          name,
+          mrpVal,
+          ptsVal
+        );
+        
+        // Clean up temporary upload file
+        fs.unlinkSync(tempImagePath);
+        tempImagePath = null;
+      } catch (err) {
+        console.warn('Failed to watermark image, using raw image:', err.message);
+        processedUrl = `/uploads/${filename}`; // fallback to raw
+      }
+    }
 
     // Save to Database
     const product = await prisma.product.create({
       data: {
-        medicine_name,
+        name,
         generic_name,
+        company,
+        pack_size: pack_size || '10 Tab',
         mrp: mrpVal,
-        b2b_discount_price: b2bVal,
-        stock_status,
-        in_stock_qty: qtyVal,
-        image_url: processedUrl // Save processed, watermarked URL path
+        pts: ptsVal,
+        tax_percent: taxVal,
+        stock_qty: stockVal,
+        expiry_date: expiryVal,
+        category,
+        image_url: processedUrl,
+        offer_scheme
       }
     });
 
-    // Optionally delete raw temporary image
-    try {
-      fs.unlinkSync(tempImagePath);
-    } catch (err) {
-      console.warn('Failed to delete temporary raw file:', err.message);
-    }
+    // Dynamic launch broadcast caption
+    const broadcastText = `🔥 New Product Available!\n\nProduct: ${name}\nComposition: ${generic_name}\nCompany: ${company}\nPack: ${pack_size || '10 Tab'}\n\nMRP: ₹${mrpVal.toFixed(2)}\nPTS (Trade Price): ₹${ptsVal.toFixed(2)}\n${offer_scheme ? `Special Scheme: ${offer_scheme}\n` : ''}\nContact Gayatri Pharma to book orders.`;
 
-    res.status(201).json(product);
+    res.status(201).json({
+      product,
+      broadcastText
+    });
   } catch (error) {
     console.error('Error creating product:', error);
     if (tempImagePath && fs.existsSync(tempImagePath)) {
@@ -139,7 +179,19 @@ router.post('/', upload.single('image'), async (req, res) => {
 router.put('/:id', upload.single('image'), async (req, res) => {
   let tempImagePath = null;
   try {
-    const { medicine_name, generic_name, mrp, b2b_discount_price, stock_status, in_stock_qty } = req.body;
+    const { 
+      name, 
+      generic_name, 
+      company, 
+      pack_size, 
+      mrp, 
+      pts, 
+      tax_percent, 
+      stock_qty, 
+      expiry_date, 
+      category, 
+      offer_scheme 
+    } = req.body;
     
     // Check if product exists
     const existing = await prisma.product.findUnique({
@@ -151,42 +203,48 @@ router.put('/:id', upload.single('image'), async (req, res) => {
     }
 
     const mrpVal = mrp ? parseFloat(mrp) : existing.mrp;
-    const b2bVal = b2b_discount_price ? parseFloat(b2b_discount_price) : existing.b2b_discount_price;
-    const medName = medicine_name || existing.medicine_name;
-    const genName = generic_name || existing.generic_name;
-    const stockVal = stock_status || existing.stock_status;
-    const qtyVal = in_stock_qty !== undefined ? parseInt(in_stock_qty, 10) : existing.in_stock_qty;
+    const ptsVal = pts ? parseFloat(pts) : existing.pts;
+    const taxVal = tax_percent ? parseFloat(tax_percent) : existing.tax_percent;
+    const stockVal = stock_qty !== undefined ? parseInt(stock_qty, 10) : existing.stock_qty;
+    const expiryVal = expiry_date ? new Date(expiry_date) : existing.expiry_date;
+    const medName = name || existing.name;
 
     let processedUrl = existing.image_url;
 
-    // If new image is uploaded OR details changed and we want to re-generate watermark
     if (req.file) {
       tempImagePath = req.file.path;
-      processedUrl = await processProductImage(
-        tempImagePath,
-        req.file.filename,
-        medName,
-        mrpVal,
-        b2bVal
-      );
       
-      // Delete temp upload
-      try { fs.unlinkSync(tempImagePath); } catch (e) {}
-    } else if (medicine_name || mrp || b2b_discount_price) {
-      // Re-generate watermark with existing image if prices or name changed
-      console.log('Product details updated. To update watermark, upload the image again.');
+      try {
+        processedUrl = await processProductImage(
+          tempImagePath,
+          req.file.filename,
+          medName,
+          mrpVal,
+          ptsVal
+        );
+        fs.unlinkSync(tempImagePath);
+        tempImagePath = null;
+      } catch (err) {
+        console.warn('Failed to watermark image, using raw:', err.message);
+        processedUrl = `/uploads/${req.file.filename}`;
+      }
     }
 
     const updated = await prisma.product.update({
       where: { id: req.params.id },
       data: {
-        medicine_name: medName,
-        generic_name: genName,
+        name: medName,
+        generic_name: generic_name || existing.generic_name,
+        company: company || existing.company,
+        pack_size: pack_size || existing.pack_size,
         mrp: mrpVal,
-        b2b_discount_price: b2bVal,
-        stock_status: stockVal,
-        in_stock_qty: qtyVal,
-        image_url: processedUrl
+        pts: ptsVal,
+        tax_percent: taxVal,
+        stock_qty: stockVal,
+        expiry_date: expiryVal,
+        category: category || existing.category,
+        image_url: processedUrl,
+        offer_scheme: offer_scheme !== undefined ? offer_scheme : existing.offer_scheme
       }
     });
 
@@ -210,8 +268,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Product not found.' });
     }
 
-    // Try deleting physical watermarked file
-    if (existing.image_url.startsWith('/processed/')) {
+    // Try deleting physical image file
+    if (existing.image_url && existing.image_url.startsWith('/processed/')) {
       const filePath = path.join(__dirname, '..', '..', 'public', existing.image_url);
       try {
         if (fs.existsSync(filePath)) {
@@ -226,7 +284,7 @@ router.delete('/:id', async (req, res) => {
       where: { id: req.params.id }
     });
 
-    res.json({ message: `Product '${existing.medicine_name}' deleted successfully.` });
+    res.json({ message: `Product '${existing.name}' deleted successfully.` });
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ error: 'Failed to delete product.' });
