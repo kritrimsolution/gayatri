@@ -59,10 +59,16 @@ async function sendTwilioMessage(to, body, mediaUrl = null) {
   if (mediaUrl) {
     // Make sure mediaUrl is absolute. If it's a relative path, we prepend APP_URL
     let absoluteUrl = mediaUrl;
-    if (mediaUrl.startsWith('/')) {
+    if (mediaUrl && !mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://')) {
       const appUrl = process.env.APP_URL || 'http://localhost:5000';
-      absoluteUrl = `${appUrl}${mediaUrl}`;
+      const separator = mediaUrl.startsWith('/') ? '' : '/';
+      absoluteUrl = `${appUrl}${separator}${mediaUrl}`;
     }
+    if (absoluteUrl.includes('localhost') || absoluteUrl.includes('127.0.0.1')) {
+      console.warn(`\n[Twilio Warning] Media URL contains 'localhost' or '127.0.0.1' (${absoluteUrl}).\nTwilio cannot fetch files from your local computer. Falling back to a public medicine image placeholder so that local testing succeeds and messages deliver to your phone!\n`);
+      absoluteUrl = 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500';
+    }
+    
     params.append('MediaUrl', absoluteUrl);
   }
 

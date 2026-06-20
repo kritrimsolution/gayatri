@@ -1896,6 +1896,7 @@ export default function AdminPortal() {
                             setCampaignForm({
                               ...campaignForm,
                               productId: pId,
+                              imageUrl: prod ? (prod.image_url || '') : '',
                               // Prefill default message text
                               messageText: prod 
                                 ? `🔥 Special Wholesale Offer!\n\nProduct: ${prod.name}\nPTS: ₹${prod.pts.toFixed(2)}\nScheme: ${prod.offer_scheme || 'Contact for schemes'}\n\nDear {{customer_name}}, kindly reply to book your stock. - Gayatri Pharma` 
