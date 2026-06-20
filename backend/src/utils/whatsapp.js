@@ -26,7 +26,7 @@ async function uploadLocalFileToPublic(localFilePath) {
     const fileBuffer = fs.readFileSync(localFilePath);
     const filename = path.basename(localFilePath);
     const isPdf = filename.endsWith('.pdf');
-    
+
     // Create Blob and package in FormData
     const fileBlob = new Blob([fileBuffer], { type: isPdf ? 'application/pdf' : 'image/png' });
     const formData = new FormData();
@@ -57,13 +57,13 @@ async function uploadLocalFileToPublic(localFilePath) {
 }
 
 /**
- * Send a WhatsApp Message via Meta Cloud API
+ * Send a WhatsApp Message via Meta Cloud AP
  * @param {object} payload - The message payload
  * @returns {Promise<object>} - Response from Meta API or mock response
  */
 async function sendMetaRequest(payload) {
   const url = `https://graph.facebook.com/${VERSION}/${PHONE_NUMBER_ID}/messages`;
-  
+
   // If we don't have valid credentials, simulate success in dev
   if (!WHATSAPP_TOKEN || WHATSAPP_TOKEN.startsWith('EAAGb37BZAoZB0BO') || !PHONE_NUMBER_ID || PHONE_NUMBER_ID === '1234567890') {
     console.log(`[WhatsApp Mock API] Sent message to ${payload.to}. Payload:`, JSON.stringify(payload, null, 2));
@@ -125,7 +125,7 @@ async function sendTwilioRequest(to, text, mediaUrl = null) {
     const isLocal = /localhost|127\.0\.0\.1|::1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\./i.test(mediaUrl);
     if (isLocal) {
       console.log(`[Twilio Local Link] Local URL detected: ${mediaUrl}. Converting to public URL for delivery...`);
-      
+
       const filename = mediaUrl.substring(mediaUrl.lastIndexOf('/') + 1);
       let localFilePath = path.join(__dirname, '../../public/processed', filename);
       if (!fs.existsSync(localFilePath)) {
@@ -329,7 +329,7 @@ async function sendLowStockAlert(medicineName, currentStock) {
   const { admin_mobile_number } = getSettings();
   const adminMobile = admin_mobile_number || '919104332333';
   const message = `⚠️ *LOW STOCK ALERT* ⚠️\n\nGayatri Pharma Inventory Warning:\nProduct *${medicineName}* has fallen below the threshold of 250 units.\n\n*Current Stock:* ${currentStock} units.\n\nPlease update stock/reorder soon to avoid stockouts.`;
-  
+
   try {
     await sendTextMessage(adminMobile, message);
     console.log(`[Low Stock Alert] Successfully sent WhatsApp alert to admin (${adminMobile}) for ${medicineName}. Stock: ${currentStock}`);
