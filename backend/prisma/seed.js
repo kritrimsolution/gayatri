@@ -167,6 +167,186 @@ async function main() {
       current_stock: 45,
       image_url: '/processed/watermarked_medicine.png',
       scheme_id: pctScheme ? pctScheme.id : null
+    },
+    {
+      medicine_name: 'Ibuprofen 400mg',
+      generic_name: 'Ibuprofen IP',
+      mrp: 25.00,
+      b2b_discount_price: 15.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 300,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'Cetirizine 10mg',
+      generic_name: 'Cetirizine Hydrochloride',
+      mrp: 18.50,
+      b2b_discount_price: 11.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 500,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Metformin 500mg',
+      generic_name: 'Metformin Hydrochloride',
+      mrp: 45.00,
+      b2b_discount_price: 28.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 250,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: pctScheme ? pctScheme.id : null
+    },
+    {
+      medicine_name: 'Atorvastatin 10mg',
+      generic_name: 'Atorvastatin Calcium',
+      mrp: 95.00,
+      b2b_discount_price: 60.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 180,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Omeprazole 20mg',
+      generic_name: 'Omeprazole IP',
+      mrp: 50.00,
+      b2b_discount_price: 30.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 350,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'Azithromycin 500mg',
+      generic_name: 'Azithromycin Dihydrate',
+      mrp: 115.00,
+      b2b_discount_price: 72.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 120,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: pctScheme ? pctScheme.id : null
+    },
+    {
+      medicine_name: 'Pantoprazole 40mg',
+      generic_name: 'Pantoprazole Sodium',
+      mrp: 110.00,
+      b2b_discount_price: 68.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 280,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Montelukast 10mg + Levocetirizine 5mg',
+      generic_name: 'Montelukast & Levocetirizine Dihydrochloride',
+      mrp: 160.00,
+      b2b_discount_price: 98.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 400,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'Telmisartan 40mg',
+      generic_name: 'Telmisartan IP',
+      mrp: 85.00,
+      b2b_discount_price: 52.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 220,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Amlodipine 5mg',
+      generic_name: 'Amlodipine Besylate',
+      mrp: 22.00,
+      b2b_discount_price: 12.50,
+      stock_status: 'IN_STOCK',
+      current_stock: 600,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'Clopidogrel 75mg',
+      generic_name: 'Clopidogrel Bisulphate',
+      mrp: 98.00,
+      b2b_discount_price: 62.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 110,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Rosuvastatin 10mg',
+      generic_name: 'Rosuvastatin Calcium',
+      mrp: 145.00,
+      b2b_discount_price: 90.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 170,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: pctScheme ? pctScheme.id : null
+    },
+    {
+      medicine_name: 'Rabeprazole 20mg + Domperidone 30mg',
+      generic_name: 'Rabeprazole Sodium & Domperidone Sustained Release',
+      mrp: 135.00,
+      b2b_discount_price: 82.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 310,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'Limcee Vitamin C 500mg',
+      generic_name: 'Ascorbic Acid IP',
+      mrp: 28.00,
+      b2b_discount_price: 16.50,
+      stock_status: 'IN_STOCK',
+      current_stock: 800,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Calcirol 60K',
+      generic_name: 'Cholecalciferol (Vitamin D3) 60,000 IU',
+      mrp: 320.00,
+      b2b_discount_price: 210.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 95,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: pctScheme ? pctScheme.id : null
+    },
+    {
+      medicine_name: 'Diclofenac Gel 30g',
+      generic_name: 'Diclofenac Diethylamine Gel',
+      mrp: 85.00,
+      b2b_discount_price: 54.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 140,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: buyXgetYScheme ? buyXgetYScheme.id : null
+    },
+    {
+      medicine_name: 'B-Complex with Vitamin C',
+      generic_name: 'B-Complex Forte with Vitamin C',
+      mrp: 40.00,
+      b2b_discount_price: 24.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 450,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: null
+    },
+    {
+      medicine_name: 'Metoprolol Succinate ER 25mg',
+      generic_name: 'Metoprolol Succinate Extended Release',
+      mrp: 78.00,
+      b2b_discount_price: 48.00,
+      stock_status: 'IN_STOCK',
+      current_stock: 160,
+      image_url: '/processed/watermarked_medicine.png',
+      scheme_id: pctScheme ? pctScheme.id : null
     }
   ];
 
@@ -178,16 +358,20 @@ async function main() {
       await prisma.product.create({ data: p });
       console.log(`✅ Product seeded: ${p.medicine_name}`);
     } else {
-      // Update existing product to link scheme
+      // Update existing product to link scheme and set latest values
       await prisma.product.update({
         where: { id: existing.id },
         data: {
+          generic_name: p.generic_name,
+          mrp: p.mrp,
+          b2b_discount_price: p.b2b_discount_price,
+          stock_status: p.stock_status,
           scheme_id: p.scheme_id,
           current_stock: p.current_stock,
           image_url: p.image_url
         }
       });
-      console.log(`✅ Product updated: ${p.medicine_name} with Scheme & Stock`);
+      console.log(`✅ Product updated: ${p.medicine_name} with all fields`);
     }
   }
 
